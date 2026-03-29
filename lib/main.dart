@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/market_overview_screen.dart';
 import 'screens/screener_screen.dart';
@@ -14,9 +15,9 @@ import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Firebase khởi động (FCM cần Firebase)
-  await Firebase.initializeApp();
+  // Firebase init với config chính xác từ Firebase Console
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Background FCM handler (top-level, bắt buộc)
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await Hive.initFlutter();
@@ -39,7 +40,6 @@ class AstraAISignalsApp extends ConsumerWidget {
   }
 }
 
-/// Bottom Navigation Shell — 5 tabs chính
 class _MainShell extends StatefulWidget {
   const _MainShell();
   @override
@@ -56,7 +56,6 @@ class _MainShellState extends State<_MainShell> {
   }
 
   Future<void> _initFCM() async {
-    // Gán callback: khi tap notification → navigate đến AnalysisScreen
     fcmService.onNavigateToStock = (symbol) {
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => AnalysisScreen(symbol: symbol),
@@ -85,7 +84,6 @@ class _MainShellState extends State<_MainShell> {
   }
 }
 
-/// Custom Bottom Navigation Bar
 class _AstraBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -94,11 +92,11 @@ class _AstraBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      _NavItem(icon: Icons.home_rounded,                    label: 'Trang chủ'),
-      _NavItem(icon: Icons.bar_chart_rounded,               label: 'Toàn cảnh'),
-      _NavItem(icon: Icons.search_rounded,                  label: 'Screener'),
-      _NavItem(icon: Icons.account_balance_wallet_rounded,  label: 'Danh mục'),
-      _NavItem(icon: Icons.notifications_rounded,           label: 'Alert'),
+      _NavItem(icon: Icons.home_rounded,                   label: 'Trang chủ'),
+      _NavItem(icon: Icons.bar_chart_rounded,              label: 'Toàn cảnh'),
+      _NavItem(icon: Icons.search_rounded,                 label: 'Screener'),
+      _NavItem(icon: Icons.account_balance_wallet_rounded, label: 'Danh mục'),
+      _NavItem(icon: Icons.notifications_rounded,          label: 'Alert'),
     ];
 
     return Container(
@@ -126,9 +124,8 @@ class _AstraBottomNav extends StatelessWidget {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Icon(items[i].icon, color: color, size: 22),
                 const SizedBox(height: 3),
-                Text(items[i].label,
-                  style: TextStyle(color: color, fontSize: 9.5,
-                    fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+                Text(items[i].label, style: TextStyle(color: color, fontSize: 9.5,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
               ]),
             ),
           );
