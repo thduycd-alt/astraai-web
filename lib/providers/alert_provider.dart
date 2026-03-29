@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 
 final dio = Dio();
-const String _alertUrl = 'http://127.0.0.1:8000/api/v1/alerts/shark';
+const String _alertUrl = 'https://astraai-signals-api.onrender.com/api/v1/alerts/shark';
 
 // Provider lưu trữ ID các cảnh báo đã show để tránh lặp lại spam Màn Hình
 final shownAlertsProvider = StateProvider<Set<int>>((ref) => {});

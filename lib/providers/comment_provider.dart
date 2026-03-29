@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 
 // Thêm host URL của Server tại đây (Sửa lại khi deploy)
-const String _baseUrl = 'http://127.0.0.1:8000/api/v1/comments';
+const String _baseUrl = 'https://astraai-signals-api.onrender.com/api/v1/comments';
 final dio = Dio();
 
 // Model Class cho Comment
