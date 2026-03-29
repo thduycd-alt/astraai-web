@@ -174,7 +174,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Lưới Theo Dõi Dòng Tiền (Watchlist)',
+                'Danh mục cổ phiếu',
+
                 style: TextStyle(color: Colors.white54, fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
