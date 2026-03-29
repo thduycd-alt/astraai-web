@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_treemap/treemap.dart';
 import '../providers/market_provider.dart';
+import '../services/api_service.dart';
 import 'analysis_screen.dart';
 import '../widgets/index_candle_chart.dart';
 
@@ -19,6 +20,7 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
   Timer? _marketTimer;
   String _lastUpdated = '';
   bool   _aiExpanded  = false;
+  bool   _isWakingUp  = true;
 
   @override
   void initState() {
@@ -33,6 +35,13 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
       ref.invalidate(marketOverviewProvider);
     });
     _lastUpdated = _nowTime();
+    // Wake-up ping cho Render free tier
+    apiService.wakeUpServer().then((_) {
+      if (mounted) setState(() => _isWakingUp = false);
+    });
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted) setState(() => _isWakingUp = false);
+    });
   }
 
   @override
@@ -59,7 +68,25 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
         backgroundColor: const Color(0xFF101015),
       ),
       backgroundColor: const Color(0xFF0A0A0E),
-      body: CustomScrollView(
+      body: Column(children: [
+        // Banner đánh thức server Render
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: _isWakingUp
+            ? Container(
+                key: const ValueKey('wakeup'),
+                color: Colors.amber.withOpacity(0.12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: const Row(children: [
+                  SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.amber)),
+                  SizedBox(width: 10),
+                  Expanded(child: Text('⚡ Đang đánh thức server (~30-60s lần đầu)...',
+                    style: TextStyle(color: Colors.amber, fontSize: 11))),
+                ]),
+              )
+            : const SizedBox.shrink(key: ValueKey('done')),
+        ),
+        Expanded(child: CustomScrollView(
         slivers: [
           // 1. Sector Rotation AI ALERT
           SliverToBoxAdapter(
@@ -450,7 +477,8 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
             child: SizedBox(height: 50),
           )
         ],
-      ),
-    );
+      )),  // closes CustomScrollView, Expanded
+    ]),   // closes Column children list
+  );    // closes Scaffold
   }
 }

@@ -2,10 +2,26 @@ import 'package:dio/dio.dart';
 import '../models/analysis_result.dart';
 
 class ApiService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 90),
+    receiveTimeout: const Duration(seconds: 90),
+    sendTimeout:    const Duration(seconds: 90),
+  ));
   // Đã cắm thẳng lõi AI lên Đám mây vĩnh viễn (Render.com)
   // App Mobile trên mọi điện thoại có thể truy cập ở bất cứ đâu trên thế giới
   final String baseUrl = "https://astraai-signals-api.onrender.com/api/v1";
+  final String healthUrl = "https://astraai-signals-api.onrender.com/";
+
+  /// Wake-up ping cho Render free tier (spin down sau 15 phút không dùng)
+  Future<bool> wakeUpServer() async {
+    try {
+      final res = await _dio.get(healthUrl);
+      return res.statusCode == 200;
+    } catch (_) {
+      return false; // Vẫn ok, request chính sẽ chờ luôn
+    }
+  }
+
 
   Future<AnalysisResult> getAnalysis(String symbol) async {
     try {
