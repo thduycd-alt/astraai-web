@@ -21,7 +21,7 @@ class AnalysisScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('AstraAI Siêu Tâm: $symbol', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('AstraAI Siêu Tâm', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1A1A1A),
         actions: [
           ValueListenableBuilder(

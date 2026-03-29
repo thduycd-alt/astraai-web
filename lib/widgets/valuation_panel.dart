@@ -4,15 +4,24 @@ import '../models/analysis_result.dart';
 
 /// Bảng Định Giá Tầm Soát Premium
 /// Hiển thị Fair Value, Vùng An Toàn, và thanh giá trực quan.
-class ValuationPanel extends StatelessWidget {
+class ValuationPanel extends StatefulWidget {
   final ValuationMetrics metrics;
   const ValuationPanel({super.key, required this.metrics});
+
+  @override
+  State<ValuationPanel> createState() => _ValuationPanelState();
+}
+
+class _ValuationPanelState extends State<ValuationPanel> {
+  bool _expanded = false;
 
   String _fmt(double v) {
     if (v <= 0) return 'N/A';
     if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
     return v.toStringAsFixed(0);
   }
+
+  ValuationMetrics get metrics => widget.metrics;
 
   @override
   Widget build(BuildContext context) {
@@ -152,38 +161,46 @@ class ValuationPanel extends StatelessWidget {
             ),
           ],
 
-          // ── AI Reasoning ─────────────────────────────────────────────────
+          // ── AI Reasoning (Ẩn/Hiện) ──────────────────────────────────────
           if (metrics.aiReasoning.isNotEmpty) ...[
             const SizedBox(height: 12),
             Divider(height: 1, color: Colors.white.withOpacity(0.05)),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Row(children: [
-                  Icon(Icons.psychology_rounded, color: Colors.purpleAccent, size: 14),
-                  SizedBox(width: 6),
-                  Text('LUẬN CHỨNG ĐỊNH GIÁ AI (TẦM SOÁT)',
+            GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                child: Row(children: [
+                  const Icon(Icons.psychology_rounded, color: Colors.purpleAccent, size: 14),
+                  const SizedBox(width: 6),
+                  const Expanded(child: Text('LUẬN CHỨNG ĐỊNH GIÁ AI (TẦM SOÁT)',
                       style: TextStyle(color: Colors.purpleAccent, fontSize: 11,
-                          fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                          fontWeight: FontWeight.bold, letterSpacing: 0.5))),
+                  Icon(_expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      color: Colors.purpleAccent, size: 16),
                 ]),
-                const SizedBox(height: 8),
-                Text(metrics.aiReasoning,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.6)),
-                if (metrics.aiTrailingAssessment.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _AISubField(title: 'Chất lượng EPS Trailing', text: metrics.aiTrailingAssessment),
-                ],
-                if (metrics.aiGrowthProjection.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _AISubField(title: 'Dự phóng Tăng trưởng', text: metrics.aiGrowthProjection),
-                ],
-                if (metrics.aiPeReasoning.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _AISubField(title: 'Luận chứng P/E', text: metrics.aiPeReasoning),
-                ],
-              ]),
+              ),
             ),
+            if (_expanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(metrics.aiReasoning,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.6)),
+                  if (metrics.aiTrailingAssessment.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _AISubField(title: 'Chất lượng EPS Trailing', text: metrics.aiTrailingAssessment),
+                  ],
+                  if (metrics.aiGrowthProjection.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _AISubField(title: 'Dự phóng Tăng trưởng', text: metrics.aiGrowthProjection),
+                  ],
+                  if (metrics.aiPeReasoning.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _AISubField(title: 'Luận chứng P/E', text: metrics.aiPeReasoning),
+                  ],
+                ]),
+              ),
           ],
           const SizedBox(height: 18),
         ],
