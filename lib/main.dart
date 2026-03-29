@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -6,12 +8,20 @@ import 'screens/market_overview_screen.dart';
 import 'screens/screener_screen.dart';
 import 'screens/portfolio_screen.dart';
 import 'screens/price_alert_screen.dart';
+import 'screens/analysis_screen.dart';
+import 'services/fcm_service.dart';
 import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase khởi động (FCM cần Firebase)
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   await Hive.initFlutter();
   await Hive.openBox('app_data');
+
   runApp(const ProviderScope(child: AstraAISignalsApp()));
 }
 
@@ -39,6 +49,22 @@ class _MainShell extends StatefulWidget {
 class _MainShellState extends State<_MainShell> {
   int _tab = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _initFCM();
+  }
+
+  Future<void> _initFCM() async {
+    // Gán callback: khi tap notification → navigate đến AnalysisScreen
+    fcmService.onNavigateToStock = (symbol) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AnalysisScreen(symbol: symbol),
+      ));
+    };
+    await fcmService.initialize();
+  }
+
   static const _screens = [
     HomeScreen(),
     MarketOverviewScreen(),
@@ -59,6 +85,7 @@ class _MainShellState extends State<_MainShell> {
   }
 }
 
+/// Custom Bottom Navigation Bar
 class _AstraBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -67,11 +94,11 @@ class _AstraBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      _NavItem(icon: Icons.home_rounded,            label: 'Trang chủ'),
-      _NavItem(icon: Icons.bar_chart_rounded,        label: 'Toàn cảnh'),
-      _NavItem(icon: Icons.search_rounded,           label: 'Screener'),
-      _NavItem(icon: Icons.account_balance_wallet_rounded, label: 'Danh mục'),
-      _NavItem(icon: Icons.notifications_rounded,    label: 'Alert'),
+      _NavItem(icon: Icons.home_rounded,                    label: 'Trang chủ'),
+      _NavItem(icon: Icons.bar_chart_rounded,               label: 'Toàn cảnh'),
+      _NavItem(icon: Icons.search_rounded,                  label: 'Screener'),
+      _NavItem(icon: Icons.account_balance_wallet_rounded,  label: 'Danh mục'),
+      _NavItem(icon: Icons.notifications_rounded,           label: 'Alert'),
     ];
 
     return Container(
