@@ -1,0 +1,36 @@
+name: astraai_signals_app
+description: "AstraAI Signals: 7-Layer VN Stock Market Analysis Mobile App MVP"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State Management Requirement
+  flutter_riverpod: ^2.5.1
+  # Networking Requirement
+  dio: ^5.4.3
+  # Charting Requirement (1m, 3m, 5m auto scale)
+  syncfusion_flutter_charts: ^33.1.45
+  # Authentication Requirement
+  firebase_core: ^2.25.4
+  firebase_auth: ^4.17.4
+  # Push Notification Requirement
+  firebase_messaging: ^14.7.13
+  # Local Storage Requirement
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  # Fonts
+  google_fonts: ^6.2.1
+  syncfusion_flutter_treemap: ^33.1.45
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
