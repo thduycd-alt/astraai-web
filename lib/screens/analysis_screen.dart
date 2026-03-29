@@ -163,25 +163,52 @@ class AnalysisScreen extends ConsumerWidget {
             ),
           ),
         ),
-        loading: () => const Center(
+        loading: () => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: Colors.deepPurpleAccent),
-              SizedBox(height: 16),
-              Text('AstraAI đang xử lý Biểu Đồ 7 Tầng...\n(Kéo API từ FastAPI Python Server)', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70))
+              const CircularProgressIndicator(color: Colors.deepPurpleAccent),
+              const SizedBox(height: 16),
+              Text(
+                'AstraAI đang phân tích $symbol...\n⏳ Lần đầu mất 30-60 giây (server khởi động)',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70),
+              ),
             ],
           ),
         ),
         error: (err, stack) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Text('Lỗi kết nối Backend Data:\n$err', textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent)),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.cloud_off_rounded, color: Colors.white24, size: 56),
+              const SizedBox(height: 16),
+              const Text('Không kết nối được server',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              const Text(
+                'Server có thể đang khởi động lại (30-60 giây).\nVui lòng thử lại.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, height: 1.5, fontSize: 13)),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6200EA),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => ref.invalidate(stockAnalysisProvider(symbol)),
+              ),
+            ]),
           ),
         ),
       ),
     );
   }
+
 
   Color _hexToColor(String hexString) {
     if (hexString.isEmpty) return const Color(0xFF448AFF);

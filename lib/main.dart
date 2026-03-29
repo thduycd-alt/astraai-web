@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:dio/dio.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/market_overview_screen.dart';
@@ -15,16 +16,31 @@ import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase init với config chính xác từ Firebase Console
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Background FCM handler (top-level, bắt buộc)
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await Hive.initFlutter();
   await Hive.openBox('app_data');
 
+  // Ping Render ngay khi app mở để wake up cold start sớm nhất có thể
+  _wakeUpRender();
+
   runApp(const ProviderScope(child: AstraAISignalsApp()));
 }
+
+Future<void> _wakeUpRender() async {
+  try {
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
+    ));
+    await dio.get('https://astraai-signals-api.onrender.com/');
+    debugPrint('[WakeUp] Render is online ✅');
+  } catch (e) {
+    debugPrint('[WakeUp] Render starting... $e');
+  }
+}
+
 
 class AstraAISignalsApp extends ConsumerWidget {
   const AstraAISignalsApp({super.key});
