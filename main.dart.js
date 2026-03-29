@@ -54314,7 +54314,7 @@ s=2
 return A.M(n.guw().AU(0,!0,!1,!0,!1,!1,!1,!0),$async$ir)
 case 2:m.$1(l+c.c.k(0))
 s=3
-return A.M(n.guw().jA(null),$async$ir)
+return A.M(n.guw().jA("BLB14H81a-I7ErHwwfwi74v4RS0RNptMvEVSbgN9iJXtEJmXTBawYKTseTJwQ9qnw3BxC9KogFgO-GeYHg30Y24"),$async$ir)
 case 3:p=c
 q.b=p
 A.mY().$1("[FCM] Token: "+A.m(p))
@@ -56751,15 +56751,16 @@ $1(a){return B.c.p0(a,"messaging/","")},
 $S:61}
 A.V_.prototype={
 jA(a){return this.acA(a)},
-acA(a){var s=0,r=A.R(t.N),q,p=2,o=[],n=this,m,l,k,j,i
+acA(a){var s=0,r=A.R(t.N),q,p=2,o=[],n=this,m,l,k,j,i,h
 var $async$jA=A.N(function(b,c){if(b===1){o.push(c)
 s=p}for(;;)switch(s){case 0:p=4
 k=v.G.firebase_messaging
+j=a==null?null:t.SF.a({vapidKey:a})
 s=7
-return A.M(A.ik(k.getToken(n.a,null),t.X),$async$jA)
-case 7:k=c
-k.toString
-m=A.bC(k)
+return A.M(A.ik(k.getToken(n.a,j),t.X),$async$jA)
+case 7:j=c
+j.toString
+m=A.bC(j)
 q=m
 s=1
 break
@@ -56767,12 +56768,12 @@ p=2
 s=6
 break
 case 4:p=3
-i=o.pop()
-l=A.ai(i)
+h=o.pop()
+l=A.ai(h)
 if(B.c.v(J.d3(l).toLowerCase(),"no active service worker")&&$.aWJ){$.aWJ=!1
 q=n.jA(a)
 s=1
-break}throw i
+break}throw h
 s=6
 break
 case 3:s=2

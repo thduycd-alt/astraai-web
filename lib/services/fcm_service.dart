@@ -24,7 +24,7 @@ class FCMService {
 
   /// Khởi động FCM — gọi trong main() sau Firebase.initializeApp()
   Future<void> initialize() async {
-    // 1. Xin quyền notification (iOS/Android 13+)
+    // 1. Xin quyền notification
     final settings = await _messaging.requestPermission(
       alert: true, badge: true, sound: true,
       announcement: false, carPlay: false,
@@ -32,8 +32,10 @@ class FCMService {
     );
     debugPrint('[FCM] Permission: ${settings.authorizationStatus}');
 
-    // 2. Lấy FCM token và đăng ký lên backend
-    _token = await _messaging.getToken();
+    // 2. Lấy FCM token với VAPID key (bắt buộc cho Web)
+    _token = await _messaging.getToken(
+      vapidKey: 'BLB14H81a-I7ErHwwfwi74v4RS0RNptMvEVSbgN9iJXtEJmXTBawYKTseTJwQ9qnw3BxC9KogFgO-GeYHg30Y24',
+    );
     debugPrint('[FCM] Token: $_token');
     if (_token != null) {
       await _subscribeTopics(_token!);
