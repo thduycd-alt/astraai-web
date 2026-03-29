@@ -22,9 +22,8 @@ class _IndexCandleChartState extends State<IndexCandleChart> {
   // OHLCV hover
   double? _hO, _hH, _hL, _hC, _hV;
 
-  static const _indices = ['VNINDEX', 'HNXINDEX', 'UPCOMINDEX'];
+  static const _indices = ['VNINDEX', 'HNXIndex', 'UPCOM', 'VN30'];
   static const _tfOptions = ['1M', '3M', '6M', '1Y'];
-
   static const _tfDays = {'1M': 30, '3M': 60, '6M': 120, '1Y': 120};
 
   @override

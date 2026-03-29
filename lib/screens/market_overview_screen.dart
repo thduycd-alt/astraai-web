@@ -18,6 +18,7 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
   Timer? _sectorTimer;
   Timer? _marketTimer;
   String _lastUpdated = '';
+  bool   _aiExpanded  = false;
 
   @override
   void initState() {
@@ -53,7 +54,8 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Toàn Cảnh Đại Cục Thị Trường', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Toàn cảnh thị trường',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         backgroundColor: const Color(0xFF101015),
       ),
       backgroundColor: const Color(0xFF0A0A0E),
@@ -169,31 +171,7 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
                       const IndexCandleChart(),
                       const SizedBox(height: 24),
 
-                      if (aiEvaluation.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E24),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.purpleAccent.withOpacity(0.5)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.smart_toy, color: Colors.purpleAccent, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('AI Đánh Giá Toàn Cảnh', style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 16)),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(aiEvaluation, style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                      ],
+
                       
                       // Biểu Dồ Heatmap 14 Ngành
                       const Align(alignment: Alignment.centerLeft, child: Text('🔥 Dòng Tiền Phân Bổ Vốn Hóa (Heatmap)', style: TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.bold))),
@@ -408,7 +386,52 @@ class _MarketOverviewScreenState extends ConsumerState<MarketOverviewScreen> {
                             ),
                           ],
                         ),
-                      )
+                      ),
+                      // ── AI ĐÁNH GIÁ (collapsible, đặt cuối trang) ──────────
+                      const SizedBox(height: 28),
+                      if (aiEvaluation.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => setState(() => _aiExpanded = !_aiExpanded),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF13141A),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.purpleAccent.withOpacity(0.35)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  const Icon(Icons.smart_toy_rounded, color: Colors.purpleAccent, size: 16),
+                                  const SizedBox(width: 8),
+                                  const Expanded(child: Text('🤖 AI Đánh Giá Toàn Cảnh',
+                                      style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 13))),
+                                  Icon(_aiExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                      color: Colors.purpleAccent, size: 18),
+                                ]),
+                                const SizedBox(height: 8),
+                                if (!_aiExpanded) ...[
+                                  Text(
+                                    aiEvaluation.length > 120
+                                        ? '${aiEvaluation.substring(0, 120).replaceAll('**', '')}...'
+                                        : aiEvaluation.replaceAll('**', ''),
+                                    style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.45),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text('Xem thêm →', style: TextStyle(color: Colors.purpleAccent, fontSize: 11)),
+                                ] else ...[
+                                  Text(
+                                    aiEvaluation.replaceAll('**', ''),
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text('Thu gọn ↑', style: TextStyle(color: Colors.purpleAccent, fontSize: 11)),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 );
