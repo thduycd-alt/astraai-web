@@ -58,6 +58,26 @@ class FCMService {
     if (initial != null) {
       Future.delayed(const Duration(milliseconds: 500), () => _handleNotificationTap(initial));
     }
+
+    // 7. Keep-alive ping mỗi 8 phút để Render không ngủ
+    _startKeepAlive();
+  }
+
+  void _startKeepAlive() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(minutes: 8));
+      try {
+        final dio = Dio(BaseOptions(
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ));
+        await dio.get('https://astraai-signals-api.onrender.com/');
+        debugPrint('[KeepAlive] Render pinged ✅');
+      } catch (_) {
+        debugPrint('[KeepAlive] Ping failed (Render cold start)');
+      }
+      return true; // loop mãi
+    });
   }
 
   Future<void> _subscribeTopics(String token) async {
