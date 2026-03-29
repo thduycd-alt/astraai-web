@@ -79,50 +79,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // Lắng nghe luồng cảnh báo Cá Mập
-    ref.listen<AsyncValue<List<dynamic>>>(sharkAlertStreamProvider, (previous, next) {
+    ref.listen<AsyncValue<List<SharkAlert>>>(sharkAlertStreamProvider, (previous, next) {
       if (next is AsyncData && next.value != null && next.value!.isNotEmpty) {
         final newAlerts = next.value!;
-        final shownAlerts = ref.read(shownAlertsProvider);
-        
-        for (var alert in newAlerts) {
-          final int id = alert['id'];
-          if (!shownAlerts.contains(id)) {
-            // Đánh dấu đã hiển thị
-            ref.read(shownAlertsProvider.notifier).state = {...shownAlerts, id};
-            
-            // Bắn Còi Báo Động (Snackbar)
-            final bool isGreen = alert['color'] == 'GREEN';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: isGreen ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
-                duration: const Duration(seconds: 6),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height - 150, left: 16, right: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                dismissDirection: DismissDirection.up,
-                content: Row(
-                  children: [
-                    const Icon(Icons.crisis_alert_rounded, color: Colors.black87, size: 28),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(alert['title'], style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16)),
-                          const SizedBox(height: 4),
-                          Text(alert['message'], style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.2)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            );
+        final shownIds  = ref.read(shownAlertsProvider);
+
+        for (final alert in newAlerts) {
+          if (!shownIds.contains(alert.id)) {
+            ref.read(shownAlertsProvider.notifier).state = {...shownIds, alert.id};
+            // Lưu vào lịch sử
+            ref.read(alertHistoryProvider.notifier).add(alert);
+            // Hiện dialog persistent
+            _showAlertDialog(context, alert, ref);
           }
         }
       }
     });
+
 
     return Scaffold(
       appBar: AppBar(
@@ -318,6 +291,149 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─── Persistent Alert Dialog ────────────────────────────────────────────────
+void _showAlertDialog(BuildContext context, SharkAlert alert, WidgetRef ref) {
+  final isGreen = alert.color == 'GREEN';
+  final color   = isGreen ? const Color(0xFF00E676) : const Color(0xFFFF3D00);
+  final icon    = isGreen ? Icons.trending_up_rounded : Icons.trending_down_rounded;
+
+  showModalBottomSheet(
+    context: context,
+    isDismissible: false,       // Không đóng khi tap ngoài
+    enableDrag: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13141C),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+        boxShadow: [BoxShadow(color: color.withOpacity(0.2), blurRadius: 24)],
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(alert.title,
+              style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 16)),
+            Text(
+              '${alert.time.hour.toString().padLeft(2, '0')}:${alert.time.minute.toString().padLeft(2, '0')} • ${alert.symbol.isNotEmpty ? alert.symbol : 'Thị trường'}',
+              style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          ])),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white38),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ]),
+        const Divider(color: Colors.white12, height: 24),
+        // Nội dung chi tiết
+        Text(alert.message,
+          style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
+        const SizedBox(height: 16),
+        // Buttons
+        Row(children: [
+          if (alert.symbol.isNotEmpty) ...[
+            Expanded(child: OutlinedButton.icon(
+              icon: Icon(Icons.analytics_rounded, color: color, size: 16),
+              label: Text('Phân tích ${alert.symbol}', style: TextStyle(color: color)),
+              style: OutlinedButton.styleFrom(side: BorderSide(color: color.withOpacity(0.5))),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => AnalysisScreen(symbol: alert.symbol)));
+              },
+            )),
+            const SizedBox(width: 10),
+          ],
+          Expanded(child: ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.black),
+            onPressed: () {
+              ref.read(alertHistoryProvider.notifier).dismiss(alert.id);
+              Navigator.pop(context);
+            },
+            child: const Text('Đã hiểu', style: TextStyle(fontWeight: FontWeight.bold)),
+          )),
+        ]),
+      ]),
+    ),
+  );
+}
+
+// ─── Alert History Screen ───────────────────────────────────────────────────
+class AlertHistoryScreen extends ConsumerWidget {
+  const AlertHistoryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(alertHistoryProvider);
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0E),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF13141C),
+        title: const Text('Lịch Sử Cảnh Báo Cá Mập',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        actions: [
+          if (history.isNotEmpty)
+            TextButton(
+              onPressed: () => ref.read(alertHistoryProvider.notifier).clearAll(),
+              child: const Text('Xóa tất cả', style: TextStyle(color: Colors.red)),
+            ),
+        ],
+      ),
+      body: history.isEmpty
+        ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.notifications_none, color: Colors.white24, size: 56),
+            SizedBox(height: 12),
+            Text('Chưa có cảnh báo nào\nAlert sẽ hiện trong giờ giao dịch',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white38, height: 1.6)),
+          ]))
+        : ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: history.length,
+            itemBuilder: (_, i) {
+              final a = history[i];
+              final isGreen = a.color == 'GREEN';
+              final color   = isGreen ? const Color(0xFF00E676) : const Color(0xFFFF3D00);
+              return GestureDetector(
+                onTap: () => _showAlertDialog(context, a, ref),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF13141C),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: a.dismissed ? Colors.white12 : color.withOpacity(0.4)),
+                  ),
+                  child: Row(children: [
+                    Icon(isGreen ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      color: a.dismissed ? Colors.white24 : color, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(a.title, style: TextStyle(
+                        color: a.dismissed ? Colors.white38 : Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text(a.message, maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white38, fontSize: 11, height: 1.4)),
+                    ])),
+                    Text(
+                      '${a.time.hour.toString().padLeft(2,'0')}:${a.time.minute.toString().padLeft(2,'0')}',
+                      style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                  ]),
+                ),
+              );
+            }),
     );
   }
 }
