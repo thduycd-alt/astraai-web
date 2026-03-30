@@ -245,14 +245,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   List<Widget> _buildLayerCards(List<LayerInfo> layers) {
     try {
-      return layers
-        .where((layer) => layer.content.isNotEmpty)
-        .map((layer) => LayerCard(
-          title: layer.title,
-          content: layer.content,
-          statusColor: _hexToColor(layer.colorHex),
-        ))
-        .toList();
+      return layers.map((layer) => LayerCard(
+        title: layer.title.isNotEmpty ? layer.title : 'Tầng Phân Tích',
+        content: layer.content.isNotEmpty ? layer.content : 'Đang phân tích tầng này...',
+        statusColor: _hexToColor(layer.colorHex),
+      )).toList();
     } catch (e) {
       return [const Padding(
         padding: EdgeInsets.all(20),
