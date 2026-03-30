@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -9,13 +10,49 @@ import '../widgets/comment_section.dart';
 import '../widgets/financial_calendar_card.dart';
 import '../widgets/valuation_panel.dart';
 
-class AnalysisScreen extends ConsumerWidget {
+class AnalysisScreen extends ConsumerStatefulWidget {
   final String symbol;
 
   const AnalysisScreen({super.key, required this.symbol});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AnalysisScreen> createState() => _AnalysisScreenState();
+}
+
+class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
+  Timer? _refreshTimer;
+
+  /// Trả về true nếu đang trong giờ giao dịch VN (T2-T7, 9:00-11:30 và 13:00-15:00)
+  bool _isTradingHours() {
+    final now = DateTime.now();
+    if (now.weekday > 6) return false; // Chủ nhật
+    final h = now.hour;
+    final m = now.minute;
+    if (h == 9 || h == 10 || (h == 11 && m <= 30)) return true;
+    if (h == 13 || h == 14 || (h == 15 && m == 0)) return true;
+    return false;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-refresh mỗi 3 phút trong phiên giao dịch
+    _refreshTimer = Timer.periodic(const Duration(minutes: 3), (_) {
+      if (_isTradingHours() && mounted) {
+        ref.invalidate(stockAnalysisProvider(widget.symbol));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final symbol = widget.symbol;
     final analysisAsyncValue = ref.watch(stockAnalysisProvider(symbol));
     final box = Hive.box('app_data');
 
