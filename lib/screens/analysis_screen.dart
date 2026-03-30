@@ -177,11 +177,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 
                 // Hiển thị động 7 Tầng Sâu từ AI Backend
                 if (result.layerList.isNotEmpty)
-                  ...result.layerList.where((layer) => layer != null && layer.content.isNotEmpty).map((layer) => LayerCard(
-                    title: layer.title,
-                    content: layer.content,
-                    statusColor: _hexToColor(layer.colorHex),
-                  )).toList()
+                  ..._buildLayerCards(result.layerList)
                 else
                   const Padding(
                     padding: EdgeInsets.all(20),
@@ -246,6 +242,24 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
+
+  List<Widget> _buildLayerCards(List<LayerInfo> layers) {
+    try {
+      return layers
+        .where((layer) => layer.content.isNotEmpty)
+        .map((layer) => LayerCard(
+          title: layer.title,
+          content: layer.content,
+          statusColor: _hexToColor(layer.colorHex),
+        ))
+        .toList();
+    } catch (e) {
+      return [const Padding(
+        padding: EdgeInsets.all(20),
+        child: Text('Đang tổng hợp 8 tầng phân tích...', style: TextStyle(color: Colors.white54)),
+      )];
+    }
+  }
 
   Color _hexToColor(String hexString) {
     if (hexString.isEmpty) return const Color(0xFF448AFF);
