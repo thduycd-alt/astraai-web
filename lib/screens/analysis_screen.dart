@@ -9,6 +9,7 @@ import '../widgets/intraday_chart.dart';
 import '../widgets/comment_section.dart';
 import '../widgets/financial_calendar_card.dart';
 import '../widgets/valuation_panel.dart';
+import '../widgets/quality_scoring_table.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   final String symbol;
@@ -133,7 +134,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   ),
                   child: Column(
                     children: [
-                      const Text('TỔNG ĐIỂM ASTRA-AI', style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                      const Text('TỔNG ĐIỂM PHẨM CHẤT', style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                       const SizedBox(height: 8),
                       Text(
                         '${result.finalScore}',
@@ -145,6 +146,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           letterSpacing: -2.0
                         ),
                       ),
+                      if (result.qualityScoring != null)
+                        Text(
+                          '${result.qualityScoring!.totalScore.toStringAsFixed(1)} / ${result.qualityScoring!.maxScore} điểm • 15 Tiêu chí Tầm Soát',
+                          style: TextStyle(color: Colors.white.withOpacity(0.40), fontSize: 12),
+                        ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -175,13 +181,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 ),
                 const SizedBox(height: 10),
                 
-                // Hiển thị động 7 Tầng Sâu từ AI Backend
-                if (result.layerList.isNotEmpty)
-                  ..._buildLayerCards(result.layerList)
+                // 15 Tiêu Chí Chấm Điểm Tầm Soát
+                if (result.qualityScoring != null)
+                  QualityScoringTable(scoring: result.qualityScoring!)
                 else
                   const Padding(
                     padding: EdgeInsets.all(20),
-                    child: Text('AI không phản hồi đủ dữ liệu để xây dựng 7 tầng.', style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
+                    child: Text('Đang trích xuất Bảng Điểm Chất Lượng Tầm Soát AI...', style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
                   ),
                 const SizedBox(height: 20),
 
@@ -243,32 +249,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   }
 
 
-  List<Widget> _buildLayerCards(List<LayerInfo> layers) {
-    try {
-      return layers.map((layer) => LayerCard(
-        title: layer.title.isNotEmpty ? layer.title : 'Tầng Phân Tích',
-        content: layer.content.isNotEmpty ? layer.content : 'Đang phân tích tầng này...',
-        statusColor: _hexToColor(layer.colorHex),
-      )).toList();
-    } catch (e) {
-      return [const Padding(
-        padding: EdgeInsets.all(20),
-        child: Text('Đang tổng hợp 8 tầng phân tích...', style: TextStyle(color: Colors.white54)),
-      )];
-    }
-  }
 
-  Color _hexToColor(String hexString) {
-    if (hexString.isEmpty) return const Color(0xFF448AFF);
-    try {
-      final buffer = StringBuffer();
-      if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-      buffer.write(hexString.replaceFirst('#', ''));
-      return Color(int.parse(buffer.toString(), radix: 16));
-    } catch(e) {
-      return const Color(0xFF448AFF); // Tránh văng app (Màn hình xám) nếu AI sinh lỗi mã màu
-    }
-  }
 }
 
 class TickerInfoHeader extends StatelessWidget {
@@ -436,114 +417,4 @@ class V4MetricsPanel extends StatelessWidget {
   }
 }
 
-class ValuationPanel extends StatelessWidget {
-  final ValuationMetrics metrics;
-  const ValuationPanel({super.key, required this.metrics});
 
-  String _formatNumber(num value) {
-    String str = value.toStringAsFixed(2);
-    if (str.endsWith('.00')) str = str.substring(0, str.length - 3);
-    List<String> parts = str.split('.');
-    parts[0] = parts[0].replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-    return parts.join('.');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final upside = metrics.upside;
-    final isUndervalued = upside > 0;
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isUndervalued 
-            ? [const Color(0xFF004D40), const Color(0xFF13141C)] 
-            : [const Color(0xFF3E2723), const Color(0xFF13141C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isUndervalued ? const Color(0xFF00E676).withOpacity(0.5) : const Color(0xFFFF3D00).withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.account_balance_wallet, color: isUndervalued ? const Color(0xFF00E676) : const Color(0xFFFF3D00), size: 20),
-              const SizedBox(width: 8),
-              Text('Định giá theo phương pháp Tầm soát cổ phiếu', style: TextStyle(color: isUndervalued ? const Color(0xFF00E676) : const Color(0xFFFF3D00), fontWeight: FontWeight.bold, fontSize: 13)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Giá Trị Thực Minh Bạch', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text(_formatNumber(metrics.fairValue), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('Biên An Toàn (Upside)', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isUndervalued ? const Color(0xFF00E676).withOpacity(0.2) : const Color(0xFFFF3D00).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8)
-                    ),
-                    child: Text('${upside > 0 ? "+" : ""}$upside%', style: TextStyle(color: isUndervalued ? const Color(0xFF00E676) : const Color(0xFFFF3D00), fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-          Divider(color: Colors.white.withOpacity(0.1)),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Giá Mục Tiêu CTCK (Tham khảo):', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
-              Text(_formatNumber(metrics.referencePrice), style: const TextStyle(color: Colors.cyanAccent, fontSize: 13, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text('💡 Định Giá Tầm Soát: [ EPS (${_formatNumber(metrics.eps)}) x ${metrics.pe} (P/E chuẩn Ngành) ] \nCổ phiếu được chiết khấu theo nguyên lý P/E tương lai kỳ vọng, nhằm tìm ra được giá trị tĩnh cốt lõi mà không bị ảnh hưởng bởi tâm lý Mua Bán hoảng loạn trên bảng điện.', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontStyle: FontStyle.italic, height: 1.5)),
-          const SizedBox(height: 12),
-          Container(
-             padding: const EdgeInsets.all(12),
-             decoration: BoxDecoration(
-               color: const Color(0xFF448AFF).withOpacity(0.1),
-               borderRadius: BorderRadius.circular(8),
-               border: Border.all(color: const Color(0xFF448AFF).withOpacity(0.3))
-             ),
-             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 const Row(
-                   children: [
-                     Icon(Icons.auto_awesome, color: Color(0xFF448AFF), size: 16),
-                     SizedBox(width: 6),
-                     Text('ASTRA-AI FORWARD EPS RAG', style: TextStyle(color: Color(0xFF448AFF), fontWeight: FontWeight.bold, fontSize: 11))
-                   ]
-                 ),
-                 const SizedBox(height: 6),
-                 Text(metrics.aiReasoning, style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.5))
-               ]
-             )
-          )
-        ],
-      ),
-    );
-  }
-}

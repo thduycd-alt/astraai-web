@@ -2,6 +2,21 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../models/analysis_result.dart';
 
+/// Định dạng giá VNĐ với dấu phẩy ngăn cách hàng nghìn (ví dụ: 14,760)
+String _fmtN(double v) {
+  if (v <= 0) return 'N/A';
+  final n = v.round();
+  final s = n.toString();
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+    buf.write(s[i]);
+  }
+  return buf.toString();
+}
+String _fmtP(double v) => _fmtN(v);
+String _fmtPrice(double v) => _fmtN(v);
+
 /// Bảng Định Giá Tầm Soát Premium
 /// Hiển thị Fair Value, Vùng An Toàn, và thanh giá trực quan.
 class ValuationPanel extends StatefulWidget {
@@ -17,8 +32,14 @@ class _ValuationPanelState extends State<ValuationPanel> {
 
   String _fmt(double v) {
     if (v <= 0) return 'N/A';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
-    return v.toStringAsFixed(0);
+    final n = v.round();
+    final s = n.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 
   ValuationMetrics get metrics => widget.metrics;
@@ -87,6 +108,37 @@ class _ValuationPanelState extends State<ValuationPanel> {
             ]),
           ),
           const SizedBox(height: 14),
+
+          // ── 3 Vùng Giá Kịch Bản ──────────────────────────────────────────
+          if (metrics.fairValueMid > 0) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                const Text('3 KỊCH BẢN GIÁ (TẦM SOÁT)', style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 0.8)),
+                const SizedBox(height: 8),
+                _ScenarioBar(
+                  low: metrics.fairValueLow, 
+                  mid: metrics.fairValueMid, 
+                  high: metrics.fairValueHigh, 
+                  currentPrice: metrics.fairValue / (1 + metrics.upside / 100)
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _ScenarioBox(label: 'Kém', value: metrics.fairValueLow, color: const Color(0xFFFF5252)),
+                    _ScenarioBox(label: 'Cơ sở', value: metrics.fairValueMid, color: Colors.amberAccent),
+                    _ScenarioBox(label: 'Tốt', value: metrics.fairValueHigh, color: const Color(0xFF69F0AE)),
+                  ]
+                ),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+            const SizedBox(height: 14),
+          ],
 
           // ── 5-Zone Price Bar ─────────────────────────────────────────────
           if (mos != null) _MoSBar(mos: mos, currentPrice: metrics.fairValue / (1 + metrics.upside / 100)),
@@ -312,11 +364,11 @@ class _MoSBar extends StatelessWidget {
         }),
         const SizedBox(height: 4),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('${(mos.buyStrong/1000).toStringAsFixed(0)}k',
+          Text(_fmtP(mos.buyStrong),
               style: const TextStyle(color: Color(0xFF69F0AE), fontSize: 9)),
-          Text('FV: ${(mos.fairValue/1000).toStringAsFixed(0)}k',
+          Text('FV: ${_fmtP(mos.fairValue)}',
               style: const TextStyle(color: Colors.amberAccent, fontSize: 9)),
-          Text('${(mos.tpStrong/1000).toStringAsFixed(0)}k',
+          Text(_fmtP(mos.tpStrong),
               style: const TextStyle(color: Color(0xFFFF5252), fontSize: 9)),
         ]),
       ]),
@@ -344,3 +396,87 @@ class _AISubField extends StatelessWidget {
     ]),
   );
 }
+
+class _ScenarioBox extends StatelessWidget {
+  final String label;
+  final double value;
+  final Color color;
+  const _ScenarioBox({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withOpacity(0.3)),
+    ),
+    child: Column(children: [
+      Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10)),
+      const SizedBox(height: 2),
+      Text(_fmtPrice(value), style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w800)),
+    ]),
+  );
+}
+
+class _ScenarioBar extends StatelessWidget {
+  final double low, mid, high, currentPrice;
+  const _ScenarioBar({required this.low, required this.mid, required this.high, required this.currentPrice});
+
+  @override
+  Widget build(BuildContext context) {
+    final range = (high > low) ? (high - low) * 1.5 : 100.0;
+    final minVal = low - range * 0.15;
+    
+    double pct(double val) => (val - minVal) / range;
+
+    return LayoutBuilder(builder: (ctx, cst) {
+      final w = cst.maxWidth;
+      return SizedBox(
+        height: 24,
+        child: Stack(children: [
+          Positioned.fill(
+            child: Container(
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          if (currentPrice > minVal)
+            Positioned(
+              left: 0,
+              width: math.min(w, math.max(0, pct(currentPrice) * w)),
+              top: 10, bottom: 10,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.purpleAccent.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          _point(pct(low) * w, const Color(0xFFFF5252)),
+          _point(pct(mid) * w, Colors.amberAccent),
+          _point(pct(high) * w, const Color(0xFF69F0AE)),
+          Positioned(
+            left: math.max(0, math.min(w - 12, pct(currentPrice) * w - 6)),
+            top: 0,
+            child: const Icon(Icons.arrow_drop_down, color: Colors.white, size: 24),
+          ),
+        ]),
+      );
+    });
+  }
+
+  Widget _point(double left, Color c) => Positioned(
+    left: left - 5,
+    top: 7,
+    child: Container(
+      width: 10, height: 10,
+      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+    ),
+  );
+}
+

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
@@ -81,10 +82,14 @@ class FCMService {
   }
 
   Future<void> _subscribeTopics(String token) async {
-    // Subscribe theo topic để nhận push từ backend
-    await _messaging.subscribeToTopic('market_alerts');
-    await _messaging.subscribeToTopic('whale_alerts');
-    debugPrint('[FCM] Subscribed to: market_alerts, whale_alerts');
+    // subscribeToTopic() không được hỗ trợ trên Web — chỉ gọi trên mobile
+    if (!kIsWeb) {
+      await _messaging.subscribeToTopic('market_alerts');
+      await _messaging.subscribeToTopic('whale_alerts');
+      debugPrint('[FCM] Subscribed to: market_alerts, whale_alerts');
+    } else {
+      debugPrint('[FCM] Web platform — skipping subscribeToTopic (not supported)');
+    }
 
     // Đăng ký token lên backend
     try {

@@ -199,6 +199,7 @@ class _PriceAlertScreenState extends State<PriceAlertScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         backgroundColor: const Color(0xFFFFD740),
         foregroundColor: Colors.black,
         icon: const Icon(Icons.add_alert),

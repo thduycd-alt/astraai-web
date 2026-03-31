@@ -163,6 +163,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         backgroundColor: const Color(0xFF69F0AE),
         foregroundColor: Colors.black,
         icon: const Icon(Icons.add),

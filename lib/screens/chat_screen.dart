@@ -210,6 +210,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               child: FloatingActionButton.small(
+                heroTag: null,
                 backgroundColor: const Color(0xFF6200EA),
                 onPressed: _loading ? null : () => _send(_controller.text),
                 child: _loading

@@ -177,6 +177,9 @@ class MoSZones {
 
 class ValuationMetrics {
   final double fairValue;
+  final double fairValueLow;
+  final double fairValueMid;
+  final double fairValueHigh;
   final double upside;
   final double referencePrice;
   final double eps;
@@ -194,6 +197,9 @@ class ValuationMetrics {
 
   ValuationMetrics({
     required this.fairValue,
+    this.fairValueLow = 0,
+    this.fairValueMid = 0,
+    this.fairValueHigh = 0,
     required this.upside,
     required this.referencePrice,
     required this.eps,
@@ -216,6 +222,9 @@ class ValuationMetrics {
     }
     return ValuationMetrics(
       fairValue:      (json['Fair_Value']      ?? 0).toDouble(),
+      fairValueLow:   (json['Fair_Value_Low']  ?? 0).toDouble(),
+      fairValueMid:   (json['Fair_Value_Mid']  ?? 0).toDouble(),
+      fairValueHigh:  (json['Fair_Value_High'] ?? 0).toDouble(),
       upside:         (json['Upside']          ?? 0).toDouble(),
       referencePrice: (json['Reference_Price'] ?? 0).toDouble(),
       eps:            (json['EPS']             ?? 0).toDouble(),
@@ -233,6 +242,48 @@ class ValuationMetrics {
   }
 }
 
+class QualityCriterion {
+  final int id;
+  final String name;
+  final double score;
+  final String reason;
+
+  QualityCriterion({required this.id, required this.name, required this.score, required this.reason});
+
+  factory QualityCriterion.fromJson(Map<String, dynamic> json) {
+    return QualityCriterion(
+      id: (json['id'] ?? 0).toInt(),
+      name: json['name'] ?? '',
+      score: (json['score'] ?? 0).toDouble(),
+      reason: json['reason'] ?? '',
+    );
+  }
+}
+
+class QualityScoring {
+  final List<QualityCriterion> criteriaList;
+  final double totalScore;
+  final int maxScore;
+  final String qualityRating;
+
+  QualityScoring({
+    required this.criteriaList,
+    required this.totalScore,
+    required this.maxScore,
+    required this.qualityRating,
+  });
+
+  factory QualityScoring.fromJson(Map<String, dynamic> json) {
+    final list = json['criteria_list'] as List<dynamic>? ?? [];
+    return QualityScoring(
+      criteriaList: list.map((e) => QualityCriterion.fromJson(e)).toList(),
+      totalScore: (json['total_score'] ?? 0).toDouble(),
+      maxScore: (json['max_score'] ?? 45).toInt(),
+      qualityRating: json['quality_rating'] ?? 'N/A',
+    );
+  }
+}
+
 class AnalysisResult {
   final String symbol;
   final double finalScore;
@@ -243,6 +294,7 @@ class AnalysisResult {
   final V4Metrics? v4Metrics;
   final ValuationMetrics? valuationMetrics;
   final FinancialCalendar? financialCalendar;
+  final QualityScoring? qualityScoring;
 
   AnalysisResult({
     required this.symbol,
@@ -254,6 +306,7 @@ class AnalysisResult {
     this.v4Metrics,
     this.valuationMetrics,
     this.financialCalendar,
+    this.qualityScoring,
   });
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -283,8 +336,15 @@ class AnalysisResult {
       parsedV4 = V4Metrics.fromJson(finalAnalysis['v4_metrics']);
     }
 
+    QualityScoring? parsedQuality;
+    if (finalAnalysis['quality_scoring'] != null) {
+      parsedQuality = QualityScoring.fromJson(finalAnalysis['quality_scoring']);
+    }
+
     ValuationMetrics? parsedValuation;
-    if (layersMap.containsKey('fundamental') && layersMap['fundamental'] is Map) {
+    if (finalAnalysis['smart_valuation'] != null) {
+      parsedValuation = ValuationMetrics.fromJson(finalAnalysis['smart_valuation']);
+    } else if (layersMap.containsKey('fundamental') && layersMap['fundamental'] is Map) {
       final fundMap = layersMap['fundamental'];
       if (fundMap.containsKey('metrics') && fundMap['metrics'] is Map) {
         parsedValuation = ValuationMetrics.fromJson(fundMap['metrics']);
@@ -307,6 +367,7 @@ class AnalysisResult {
       v4Metrics: parsedV4,
       valuationMetrics: parsedValuation,
       financialCalendar: parsedCalendar,
+      qualityScoring: parsedQuality,
     );
   }
 }
